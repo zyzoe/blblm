@@ -8,7 +8,9 @@
 #' @export
 blblm <- function(formula, data, m = 10, B = 5000) {
   data_list <- split_data(data, m)
-  estimates <- map(data_list, ~lm_each_subsample(formula = formula, data = ., n = nrow(data), B = B))
+  estimates <- map(
+    data_list,
+    ~ lm_each_subsample(formula = formula, data = ., n = nrow(data), B = B))
   res <- list(estimates = estimates, formula = formula)
   class(res) <- "blblm"
   invisible(res)
@@ -56,7 +58,7 @@ blbsigma <- function(fit, freqs) {
   p <- fit$rank
   y <- model.extract(fit$model, "response")
   e <- fitted(fit) - y
-  sqrt(sum(freqs*(e^2))/(sum(freqs) - p))
+  sqrt(sum(freqs * (e^2)) / (sum(freqs) - p))
 }
 
 
@@ -71,11 +73,11 @@ print.blblm <- function(x, ...) {
 #' @method sigma blblm
 sigma.blblm <- function(object, confidence = FALSE, level = 0.95, ...) {
   est <- object$estimates
-  sigma <- mean(map_dbl(est, ~mean(map_dbl(., "sigma"))))
+  sigma <- mean(map_dbl(est, ~ mean(map_dbl(., "sigma"))))
   if (confidence) {
     alpha <- 1 - 0.95
     limits <- est %>%
-      map_mean(~quantile(map_dbl(., "sigma"), c(alpha/2, 1-alpha/2))) %>%
+      map_mean(~ quantile(map_dbl(., "sigma"), c(alpha / 2, 1 - alpha / 2))) %>%
       set_names(NULL)
     return(c(sigma = sigma, lwr = limits[1], upr = limits[2]))
   } else {
@@ -99,9 +101,9 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
   }
   alpha <- 1 - 0.95
   est <- object$estimates
-  out <- map(parm, function(p){
-    map_mean(est, ~ map_dbl(., c("coef", p)) %>% quantile(c(alpha / 2, 1 - alpha/2)))
-  }) %>% reduce(rbind)
+  out <- map_rbind(parm, function(p) {
+    map_mean(est, ~ map_dbl(., list("coef", p)) %>% quantile(c(alpha / 2, 1 - alpha / 2)))
+  })
   if (is.vector(out)) {
     out <- as.matrix(t(out))
   }
@@ -111,11 +113,13 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
 
 #' @export
 #' @method predict blblm
-predict.blblm <- function(object, new_data, confidence = FALSE, level = 0.95,...) {
+predict.blblm <- function(object, new_data, confidence = FALSE, level = 0.95, ...) {
   est <- object$estimates
   X <- model.matrix(reformulate(attr(terms(object$formula), "term.labels")), new_data)
   if (confidence) {
-    map_mean(est, ~ map_cbind(., ~ X %*% .$coef) %>% apply(1, mean_lwr_upr, level = level) %>% t())
+    map_mean(est, ~ map_cbind(., ~ X %*% .$coef) %>%
+      apply(1, mean_lwr_upr, level = level) %>%
+      t())
   } else {
     map_mean(est, ~ map_cbind(., ~ X %*% .$coef) %>% rowMeans())
   }
@@ -124,7 +128,7 @@ predict.blblm <- function(object, new_data, confidence = FALSE, level = 0.95,...
 
 mean_lwr_upr <- function(x, level = 0.95) {
   alpha <- 1 - level
-  c(fit = mean(x), quantile(x, c(alpha/2, 1 - alpha/2)) %>% set_names(c("lwr", "upr")))
+  c(fit = mean(x), quantile(x, c(alpha / 2, 1 - alpha / 2)) %>% set_names(c("lwr", "upr")))
 }
 
 map_mean <- function(.x, .f, ...) {
@@ -133,4 +137,8 @@ map_mean <- function(.x, .f, ...) {
 
 map_cbind <- function(.x, .f, ...) {
   map(.x, .f, ...) %>% reduce(cbind)
+}
+
+map_rbind <- function(.x, .f, ...) {
+  map(.x, .f, ...) %>% reduce(rbind)
 }
