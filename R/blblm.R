@@ -75,8 +75,8 @@ sigma.blblm <- function(object, confidence = FALSE, level = 0.95, ...) {
   if (confidence) {
     alpha <- 1 - 0.95
     limits <- est %>%
-      map(~quantile(map_dbl(., "sigma"), c(alpha/2, 1-alpha/2))) %>%
-      list_mean() %>% set_names(NULL)
+      map_mean(~quantile(map_dbl(., "sigma"), c(alpha/2, 1-alpha/2))) %>%
+      set_names(NULL)
     return(c(sigma = sigma, lwr = limits[1], upr = limits[2]))
   } else {
     return(sigma)
@@ -87,7 +87,7 @@ sigma.blblm <- function(object, confidence = FALSE, level = 0.95, ...) {
 #' @method coef blblm
 coef.blblm <- function(object, ...) {
   est <- object$estimates
-  map(est, ~ map(., "coef") %>% reduce(rbind) %>% colMeans()) %>% list_mean()
+  map_mean(est, ~ map_cbind(., "coef") %>% rowMeans())
 }
 
 
@@ -100,8 +100,7 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
   alpha <- 1 - 0.95
   est <- object$estimates
   out <- map(parm, function(p){
-    map(est, ~ map_dbl(., c("coef", p)) %>% quantile(c(alpha / 2, 1 - alpha/2))) %>%
-      list_mean()
+    map_mean(est, ~ map_dbl(., c("coef", p)) %>% quantile(c(alpha / 2, 1 - alpha/2)))
   }) %>% reduce(rbind)
   if (is.vector(out)) {
     out <- as.matrix(t(out))
@@ -116,14 +115,9 @@ predict.blblm <- function(object, new_data, confidence = FALSE, level = 0.95,...
   est <- object$estimates
   X <- model.matrix(reformulate(attr(terms(object$formula), "term.labels")), new_data)
   if (confidence) {
-    map(est, ~ map(., ~ X %*% .$coef) %>%
-                 reduce(cbind) %>%
-                 apply(1, mean_lwr_upr, level = level) %>% t()
-      ) %>%
-      list_mean()
+    map_mean(est, ~ map_cbind(., ~ X %*% .$coef) %>% apply(1, mean_lwr_upr, level = level) %>% t())
   } else {
-    map(est, ~ map(., ~ X %*% .$coef) %>% reduce(cbind) %>% rowMeans()) %>%
-      list_mean()
+    map_mean(est, ~ map_cbind(., ~ X %*% .$coef) %>% rowMeans())
   }
 }
 
@@ -133,7 +127,10 @@ mean_lwr_upr <- function(x, level = 0.95) {
   c(fit = mean(x), quantile(x, c(alpha/2, 1 - alpha/2)) %>% set_names(c("lwr", "upr")))
 }
 
+map_mean <- function(.x, .f, ...) {
+  (map(.x, .f, ...) %>% reduce(`+`)) / length(.x)
+}
 
-list_mean <- function(l) {
-  (l %>% reduce(`+`)) / length(l)
+map_cbind <- function(.x, .f, ...) {
+  map(.x, .f, ...) %>% reduce(cbind)
 }
