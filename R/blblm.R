@@ -43,29 +43,31 @@ lm1 <- function(formula, data, freqs) {
   # otherwise the formula will pick a wront variable from the global scope.
   environment(formula) <- environment()
   fit <- lm(formula, data, weights = freqs)
-  list(coef = blbcoef(fit), sigma = blbsigma(fit, freqs))
+  list(coef = blbcoef(fit), sigma = blbsigma(fit))
 }
 
 
 #' compute the coefficients from fit
-blbcoef <- function(fit, freqs) {
+blbcoef <- function(fit) {
   coef(fit)
 }
 
 
 #' compute sigma from fit
-blbsigma <- function(fit, freqs) {
+blbsigma <- function(fit) {
   p <- fit$rank
   y <- model.extract(fit$model, "response")
   e <- fitted(fit) - y
-  sqrt(sum(freqs * (e^2)) / (sum(freqs) - p))
+  w <- fit$weights
+  sqrt(sum(w * (e^2)) / (sum(w) - p))
 }
 
 
 #' @export
 #' @method print blblm
 print.blblm <- function(x, ...) {
-  cat("blblm model")
+  cat("blblm model:", capture.output(x$formula))
+  cat("\n")
 }
 
 
