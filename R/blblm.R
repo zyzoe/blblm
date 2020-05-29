@@ -107,7 +107,7 @@ confint.blblm <- function(object, parm = NULL, level = 0.95, ...) {
   if (is.null(parm)) {
     parm <- attr(terms(fit$formula), "term.labels")
   }
-  alpha <- 1 - 0.95
+  alpha <- 1 - level
   est <- object$estimates
   out <- map_rbind(parm, function(p) {
     map_mean(est, ~ map_dbl(., list("coef", p)) %>% quantile(c(alpha / 2, 1 - alpha / 2)))
