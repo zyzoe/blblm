@@ -1,18 +1,24 @@
 Package: blblm
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Bag of little bootstraps algorithm
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Yi Zhu
+Maintainer: The package maintainer <zoezhu@ucdavis.edu>
+Description: Bag of little bootstraps algorithm for linear regression and 
+    generalized linear models. This package includes improvement that allows users to 
+    use parallelization and specify a list of file of datasets. For GLM, users can specify the familytype
+    in order to choose the desired model. 
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
-    testthat (>= 2.1.0)
+    testthat (>= 2.1.0),
+    knitr,
+    rmarkdown
 Imports: 
     purrr,
-    magrittr
+    magrittr,
+    readr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
+VignetteBuilder: knitr
